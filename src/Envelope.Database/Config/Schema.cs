@@ -7,6 +7,7 @@ public class Schema : IValidable
 {
 	public string Name { get; set; }
 	public string Alias { get; set; }
+	public int? Id { get; set; }
 	public List<Table>? Tables { get; set; }
 	public List<View>? Views { get; set; }
 

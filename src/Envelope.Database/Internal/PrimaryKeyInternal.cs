@@ -4,24 +4,30 @@ namespace Envelope.Database.Internal;
 
 internal class PrimaryKeyInternal : IPrimaryKey
 {
-	private readonly PrimaryKey _config;
-
+	public PrimaryKey Config { get; }
 	public TableInternal Table { get; }
 
-	public string Name => _config.Name;
-	public List<string> Columns => _config.Columns;
+	public string Name => Config.Name;
+	public List<ColumnInternal> Columns { get; }
 
 	ITable IPrimaryKey.Table => Table;
-	IEnumerable<string> IPrimaryKey.Columns => Columns;
+	IEnumerable<IColumn> IPrimaryKey.Columns => Columns;
 
 	public PrimaryKeyInternal(TableInternal table, PrimaryKey config)
 	{
 		Table = table ?? throw new ArgumentNullException(nameof(table));
-		_config = config ?? throw new ArgumentNullException(nameof(config));
+		Config = config ?? throw new ArgumentNullException(nameof(config));
+		Columns = new List<ColumnInternal>();
+	}
+
+	internal PrimaryKeyInternal AddColumn(ColumnInternal column)
+	{
+		Columns.Add(column);
+		return this;
 	}
 
 	public override string ToString()
 	{
-		return $"{Name}: {string.Join(", ", Columns ?? new List<string>())}";
+		return $"{Name}: {string.Join(", ", Columns?.Select(x => x.Name) ?? new List<string>())}";
 	}
 }

@@ -6,6 +6,7 @@ namespace Envelope.Database.Config;
 public class View : IValidable
 {
 	public string Name { get; set; }
+	public int? Id { get; set; }
 	public string Definition { get; set; }
 
 	public List<IValidationMessage>? Validate(string? propertyPrefix = null, List<IValidationMessage>? parentErrorBuffer = null, Dictionary<string, object>? validationContext = null)

@@ -1,15 +1,16 @@
 using Envelope.Database.Config;
+using Envelope.Validation;
 
 namespace Envelope.Database.Internal;
 
 internal class TableInternal : ITable
 {
-	private readonly Table _config;
-
+	public Table Config { get; }
 	public SchemaInternal Schema { get; }
 
-	public string Name => _config.Name;
+	public string Name => Config.Name;
 	public string Alias => Schema.Alias;
+	public int? Id => Config.Id;
 	public List<ColumnInternal> Columns { get; }
 	public PrimaryKeyInternal? PrimaryKey { get; }
 	public List<ForeignKeyInternal>? ForeignKeys { get; }
@@ -26,30 +27,74 @@ internal class TableInternal : ITable
 	public TableInternal(SchemaInternal schema, Table config)
 	{
 		Schema = schema ?? throw new ArgumentNullException(nameof(schema));
-		_config = config ?? throw new ArgumentNullException(nameof(config));
+		Config = config ?? throw new ArgumentNullException(nameof(config));
 		Columns = new();
 		ForeignKeys = new();
 		UniqueConstraints = new();
 		Indexes = new();
 
-		if (0 < _config.Columns?.Count)
-			foreach (var column in _config.Columns)
+		if (0 < Config.Columns?.Count)
+			foreach (var column in Config.Columns)
 				Columns.Add(new ColumnInternal(this, column));
 
-		if (_config.PrimaryKey != null)
-			PrimaryKey = new PrimaryKeyInternal(this, _config.PrimaryKey);
+		if (Config.PrimaryKey != null)
+		{
+			PrimaryKey = new PrimaryKeyInternal(this, Config.PrimaryKey);
+			foreach (var columnName in PrimaryKey.Config.Columns)
+			{
+				var column = Columns.FirstOrDefault(x => x.Name == columnName);
+				if (column == null)
+				{
+					Schema.Model.AddError(ValidationMessageFactory.Error($"Invalid PK {Schema.Name}.{Name}.{PrimaryKey.Name} | Column = {columnName}"));
+					continue;
+				}
 
-		if (0 < _config.ForeignKeys?.Count)
-			foreach (var foreignKey in _config.ForeignKeys)
+				column.SetPrimaryKey(PrimaryKey);
+				PrimaryKey.AddColumn(column);
+			}
+		}
+
+		if (0 < Config.ForeignKeys?.Count)
+			foreach (var foreignKey in Config.ForeignKeys)
 				ForeignKeys.Add(new ForeignKeyInternal(this, foreignKey));
 
-		if (0 < _config.UniqueConstraints?.Count)
-			foreach (var uniqueConstraint in _config.UniqueConstraints)
-				UniqueConstraints.Add(new UniqueConstraintInternal(this, uniqueConstraint));
+		if (0 < Config.UniqueConstraints?.Count)
+			foreach (var uniqueConstraint in Config.UniqueConstraints)
+			{
+				var uq = new UniqueConstraintInternal(this, uniqueConstraint);
+				UniqueConstraints.Add(uq);
+				foreach (var columnName in uq.Config.Columns)
+				{
+					var column = Columns.FirstOrDefault(x => x.Name == columnName);
+					if (column == null)
+					{
+						Schema.Model.AddError(ValidationMessageFactory.Error($"Invalid UniqueConstraint {Schema.Name}.{Name}.{uq.Name} | Column = {columnName}"));
+						continue;
+					}
 
-		if (0 < _config.Indexes?.Count)
-			foreach (var index in _config.Indexes)
-				Indexes.Add(new IndexInternal(this, index));
+					column.AddUniqueConstraint(uq);
+					uq.AddColumn(column);
+				}
+			}
+
+		if (0 < Config.Indexes?.Count)
+			foreach (var index in Config.Indexes)
+			{
+				var idx = new IndexInternal(this, index);
+				Indexes.Add(idx);
+				foreach (var columnName in idx.Config.Columns)
+				{
+					var column = Columns.FirstOrDefault(x => x.Name == columnName);
+					if (column == null)
+					{
+						Schema.Model.AddError(ValidationMessageFactory.Error($"Invalid Index {Schema.Name}.{Name}.{idx.Name} | Column = {columnName}"));
+						continue;
+					}
+
+					column.AddIndex(idx);
+					idx.AddColumn(column);
+				}
+			}
 	}
 
 	public override string ToString()

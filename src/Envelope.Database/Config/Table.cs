@@ -6,6 +6,7 @@ namespace Envelope.Database.Config;
 public class Table : IValidable
 {
 	public string Name { get; set; }
+	public int? Id { get; set; }
 	public List<Column> Columns { get; set; }
 	public PrimaryKey? PrimaryKey { get; set; }
 	public List<ForeignKey>? ForeignKeys { get; set; }
