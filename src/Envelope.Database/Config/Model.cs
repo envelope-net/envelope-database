@@ -7,6 +7,10 @@ public class Model : IValidable
 {
 	public ProviderType ProviderType { get; set; }
 	public string Name { get; set; }
+	public int? Id { get; set; }
+	public string? CollationName { get; set; }
+	public string? DefaultSchema { get; set; }
+	public DateTime? CreationDate { get; set; }
 	public List<Schema> Schemas { get; set; }
 
 	public List<IValidationMessage>? Validate(string? propertyPrefix = null, List<IValidationMessage>? parentErrorBuffer = null, Dictionary<string, object>? validationContext = null)

@@ -2,5 +2,5 @@
 
 public interface IDatabaseModelFactory
 {
-	IModel Create(Config.Model config, bool cloneConfig = true);
+	bool TryCreate(Config.Model config, out IModel model, bool cloneConfig = true);
 }

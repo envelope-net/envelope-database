@@ -2,6 +2,9 @@
 
 internal class DatabaseModelFactory : IDatabaseModelFactory
 {
-	public IModel Create(Config.Model config, bool cloneConfig = true)
-		=> new ModelInternal(config, cloneConfig).Build();
+	public bool TryCreate(Config.Model config, out IModel model, bool cloneConfig = true)
+	{
+		model = new ModelInternal(config, cloneConfig);
+		return model.Build(out model);
+	}
 }

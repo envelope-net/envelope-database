@@ -2,24 +2,30 @@ namespace Envelope.Database.Internal;
 
 internal class IndexInternal : IIndex
 {
-	private readonly Config.Index _config;
-
+	public Config.Index Config { get; }
 	public TableInternal Table { get; }
 
-	public string Name => _config.Name;
-	public List<string> Columns => _config.Columns;
+	public string Name => Config.Name;
+	public List<ColumnInternal> Columns { get; }
 
 	ITable IIndex.Table => Table;
-	IEnumerable<string> IIndex.Columns => Columns;
+	IEnumerable<IColumn> IIndex.Columns => Columns;
 
 	public IndexInternal(TableInternal table, Config.Index config)
 	{
 		Table = table ?? throw new ArgumentNullException(nameof(table));
-		_config = config ?? throw new ArgumentNullException(nameof(config));
+		Config = config ?? throw new ArgumentNullException(nameof(config));
+		Columns = new List<ColumnInternal>();
+	}
+
+	internal IndexInternal AddColumn(ColumnInternal column)
+	{
+		Columns.Add(column);
+		return this;
 	}
 
 	public override string ToString()
 	{
-		return $"{Name}: {string.Join(", ", Columns ?? new List<string>())}";
+		return $"{Name}: {string.Join(", ", Columns?.Select(x => x.Name) ?? new List<string>())}";
 	}
 }

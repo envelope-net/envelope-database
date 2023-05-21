@@ -5,13 +5,16 @@ namespace Envelope.Database.Internal;
 
 internal class ModelInternal : IModel
 {
-	private readonly Model _config;
-
-	public ProviderType ProviderType => _config.ProviderType;
-	public string Name => _config.Name;
+	public Model Config { get; }
+	public ProviderType ProviderType => Config.ProviderType;
+	public string Name => Config.Name;
+	public int? Id => Config.Id;
+	public string? CollationName => Config.CollationName;
+	public string? DefaultSchema => Config.DefaultSchema;
+	public DateTime? CreationDate => Config.CreationDate;
 	public List<SchemaInternal> Schemas { get; }
 
-	public List<IValidationMessage>? ConfigErrors { get; }
+	public List<IValidationMessage>? ConfigErrors { get; private set; }
 	public List<IValidationMessage>? ConfigWarnings { get; }
 
 	public bool Built { get; private set; }
@@ -22,12 +25,12 @@ internal class ModelInternal : IModel
 
 	public ModelInternal(Model config, bool cloneConfig = true)
 	{
-		_config = config ?? throw new ArgumentNullException(nameof(config));
+		Config = config ?? throw new ArgumentNullException(nameof(config));
 
 		if (cloneConfig)
-			_config = _config.Clone();
+			Config = Config.Clone();
 
-		var validateResult = _config.Validate();
+		var validateResult = Config.Validate();
 		ConfigErrors = validateResult?.Where(x => x.Severity == ValidationSeverity.Error).ToList();
 		if (ConfigErrors?.Count == 0)
 			ConfigErrors = null;
@@ -40,32 +43,75 @@ internal class ModelInternal : IModel
 	}
 
 	private readonly object _lock = new();
-	public ModelInternal Build()
+	public bool Build(out ModelInternal model)
 	{
-		if (Built)
-			return this;
-			//throw new InvalidOperationException("Already built");
+		model = this;
+
+		if (Built || ConfigErrors?.Any() == true)
+			return ConfigErrors?.Any() != true;
 
 		lock (_lock)
 		{
-			if (Built)
-				return this;
-				//throw new InvalidOperationException("Already built");
+			if (Built || ConfigErrors?.Any() == true)
+				return ConfigErrors?.Any() != true;
+
+			foreach (var schema in Config.Schemas)
+				Schemas.Add(new SchemaInternal(this, schema));
+
+			foreach (var fromSchema in Schemas)
+			{
+				if (0 < fromSchema.Tables?.Count)
+				{
+					foreach (var fromTable in fromSchema.Tables.Where(x => 0 < x.ForeignKeys?.Count))
+					{
+						foreach (var foreignKey in fromTable.ForeignKeys!)
+						{
+							var fromColumn = fromTable.Columns.FirstOrDefault(x => x.Name == foreignKey.Column);
+							if (fromColumn == null)
+							{
+								AddError(ValidationMessageFactory.Error($"Invalid FK: {fromSchema.Name}.{fromTable.Name}.{foreignKey.Name} | {nameof(fromColumn)} == null"));
+								continue;
+							}
+
+							var toSchema = Schemas.FirstOrDefault(x => x.Alias == foreignKey.ForeignSchemaAlias);
+							var toTable = toSchema?.Tables?.FirstOrDefault(x => x.Name == foreignKey.ForeignTableName);
+							var toColumn = toTable?.Columns.FirstOrDefault(x => x.Name == foreignKey.ForeignColumnName);
+							if (toColumn == null)
+							{
+								AddError(ValidationMessageFactory.Error($"Invalid FK: {fromSchema.Name}.{fromTable.Name}.{foreignKey.Name} | {nameof(toColumn)} == null"));
+								continue;
+							}
+
+							foreignKey.SetFromColumn(fromColumn);
+							foreignKey.SetToColumn(toColumn);
+							fromColumn.SetTargetForeignKey(foreignKey);
+							toColumn.AddSourceForeignKey(foreignKey);
+						}
+					}
+				}
+			}
 
 			if (ConfigErrors?.Any() == true)
-				throw new InvalidOperationException("Config error");
-
-			foreach (var schema in _config.Schemas)
-				Schemas.Add(new SchemaInternal(this, schema));
+				return ConfigErrors?.Any() != true;
 
 			Built = true;
 		}
 
-		return this;
+		return ConfigErrors?.Any() != true;
 	}
 
-	IModel IModel.Build()
-		=> Build();
+	public void AddError(IValidationMessage error)
+	{
+		ConfigErrors ??= new List<IValidationMessage>();
+		ConfigErrors.Add(error);
+	}
+
+	bool IModel.Build(out IModel model)
+	{
+		var result = Build(out var m);
+		model = m;
+		return result;
+	}
 
 	public override string ToString()
 	{

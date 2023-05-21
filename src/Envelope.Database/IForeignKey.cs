@@ -6,9 +6,12 @@ public interface IForeignKey
 
 	string Name { get; }
 	string Column { get; }
-	string ForeignSchemaName { get; }
+	string ForeignSchemaAlias { get; }
 	string ForeignTableName { get; }
 	string ForeignColumnName { get; }
 	ReferentialAction? OnUpdateAction { get; }
 	ReferentialAction? OnDeleteAction { get; }
+
+	IColumn FromColumn { get; }
+	IColumn ToColumn { get; }
 }

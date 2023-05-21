@@ -7,7 +7,7 @@ public class ForeignKey : IValidable
 {
 	public string Name { get; set; }
 	public string Column { get; set; }
-	public string ForeignSchemaName { get; set; }
+	public string ForeignSchemaAlias { get; set; }
 	public string ForeignTableName { get; set; }
 	public string ForeignColumnName { get; set; }
 	public ReferentialAction? OnUpdateAction { get; set; }
@@ -23,8 +23,8 @@ public class ForeignKey : IValidable
 		if (string.IsNullOrWhiteSpace(Column))
 			parentErrorBuffer.Add(ValidationMessageFactory.Error($"{propertyPrefix.ConcatIfNotNullOrEmpty(".", nameof(Column))} == null"));
 
-		if (string.IsNullOrWhiteSpace(ForeignSchemaName))
-			parentErrorBuffer.Add(ValidationMessageFactory.Error($"{propertyPrefix.ConcatIfNotNullOrEmpty(".", nameof(ForeignSchemaName))} == null"));
+		if (string.IsNullOrWhiteSpace(ForeignSchemaAlias))
+			parentErrorBuffer.Add(ValidationMessageFactory.Error($"{propertyPrefix.ConcatIfNotNullOrEmpty(".", nameof(ForeignSchemaAlias))} == null"));
 
 		if (string.IsNullOrWhiteSpace(ForeignTableName))
 			parentErrorBuffer.Add(ValidationMessageFactory.Error($"{propertyPrefix.ConcatIfNotNullOrEmpty(".", nameof(ForeignTableName))} == null"));
@@ -40,7 +40,7 @@ public class ForeignKey : IValidable
 		{
 			Name = Name,
 			Column = Column,
-			ForeignSchemaName = ForeignSchemaName,
+			ForeignSchemaAlias = ForeignSchemaAlias,
 			ForeignTableName = ForeignTableName,
 			ForeignColumnName = ForeignColumnName,
 			OnUpdateAction = OnUpdateAction,

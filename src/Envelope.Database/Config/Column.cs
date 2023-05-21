@@ -7,15 +7,15 @@ public class Column : IValidable
 {
 	public string Name { get; set; }
 	public string DatabaseType { get; set; }
-	public bool IsNullable { get; set; }
+	public bool IsNotNull { get; set; }
 	public string? DefaultValue { get; set; }
 	public int CharacterMaximumLength { get; set; }
-	public int? Precision { get; set; }
-	public int? Scale { get; set; }
+	public int Precision { get; set; }
+	public int Scale { get; set; }
 	public bool IsIdentity { get; set; }
-	public long? IdentityStart { get; set; }
-	public long? IdentityIncrement { get; set; }
-	public long? LastIdentity { get; set; }
+	public long IdentityStart { get; set; }
+	public long IdentityIncrement { get; set; }
+	public long LastIdentity { get; set; }
 	public string? ComputedColumnSql { get; set; }
 
 	public List<IValidationMessage>? Validate(string? propertyPrefix = null, List<IValidationMessage>? parentErrorBuffer = null, Dictionary<string, object>? validationContext = null)
@@ -36,7 +36,7 @@ public class Column : IValidable
 		{
 			Name = Name,
 			DatabaseType = DatabaseType,
-			IsNullable = IsNullable,
+			IsNotNull = IsNotNull,
 			DefaultValue = DefaultValue,
 			CharacterMaximumLength = CharacterMaximumLength,
 			Precision = Precision,

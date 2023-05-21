@@ -13,5 +13,5 @@ public interface IModel
 
 	bool Built { get; }
 
-	IModel Build();
+	bool Build(out IModel model);
 }
