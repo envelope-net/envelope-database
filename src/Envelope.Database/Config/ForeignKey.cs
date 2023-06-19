@@ -1,4 +1,3 @@
-using Envelope.Text;
 using Envelope.Validation;
 
 namespace Envelope.Database.Config;
@@ -13,26 +12,22 @@ public class ForeignKey : IValidable
 	public ReferentialAction? OnUpdateAction { get; set; }
 	public ReferentialAction? OnDeleteAction { get; set; }
 
-	public List<IValidationMessage>? Validate(string? propertyPrefix = null, List<IValidationMessage>? parentErrorBuffer = null, Dictionary<string, object>? validationContext = null)
+	public List<IValidationMessage>? Validate(
+		string? propertyPrefix = null,
+		ValidationBuilder? validationBuilder = null,
+		Dictionary<string, object>? globalValidationContext = null,
+		Dictionary<string, object>? customValidationContext = null)
 	{
-		parentErrorBuffer ??= new List<IValidationMessage>();
+		validationBuilder ??= new ValidationBuilder();
+		validationBuilder.SetValidationMessages(propertyPrefix, globalValidationContext)
+			.IfNullOrWhiteSpace(Name)
+			.IfNullOrWhiteSpace(Column)
+			.IfNullOrWhiteSpace(ForeignSchemaAlias)
+			.IfNullOrWhiteSpace(ForeignTableName)
+			.IfNullOrWhiteSpace(ForeignColumnName)
+			;
 
-		if (string.IsNullOrWhiteSpace(Name))
-			parentErrorBuffer.Add(ValidationMessageFactory.Error($"{propertyPrefix.ConcatIfNotNullOrEmpty(".", nameof(Name))} == null"));
-
-		if (string.IsNullOrWhiteSpace(Column))
-			parentErrorBuffer.Add(ValidationMessageFactory.Error($"{propertyPrefix.ConcatIfNotNullOrEmpty(".", nameof(Column))} == null"));
-
-		if (string.IsNullOrWhiteSpace(ForeignSchemaAlias))
-			parentErrorBuffer.Add(ValidationMessageFactory.Error($"{propertyPrefix.ConcatIfNotNullOrEmpty(".", nameof(ForeignSchemaAlias))} == null"));
-
-		if (string.IsNullOrWhiteSpace(ForeignTableName))
-			parentErrorBuffer.Add(ValidationMessageFactory.Error($"{propertyPrefix.ConcatIfNotNullOrEmpty(".", nameof(ForeignTableName))} == null"));
-
-		if (string.IsNullOrWhiteSpace(ForeignColumnName))
-			parentErrorBuffer.Add(ValidationMessageFactory.Error($"{propertyPrefix.ConcatIfNotNullOrEmpty(".", nameof(ForeignColumnName))} == null"));
-
-		return parentErrorBuffer;
+		return validationBuilder.Build();
 	}
 
 	public ForeignKey Clone()

@@ -11,25 +11,21 @@ public class Schema : IValidable
 	public List<Table>? Tables { get; set; }
 	public List<View>? Views { get; set; }
 
-	public List<IValidationMessage>? Validate(string? propertyPrefix = null, List<IValidationMessage>? parentErrorBuffer = null, Dictionary<string, object>? validationContext = null)
+	public List<IValidationMessage>? Validate(
+		string? propertyPrefix = null,
+		ValidationBuilder? validationBuilder = null,
+		Dictionary<string, object>? globalValidationContext = null,
+		Dictionary<string, object>? customValidationContext = null)
 	{
-		parentErrorBuffer ??= new List<IValidationMessage>();
+		validationBuilder ??= new ValidationBuilder();
+		validationBuilder.SetValidationMessages(propertyPrefix, globalValidationContext)
+			.IfNullOrWhiteSpace(Name)
+			.IfNullOrWhiteSpace(Alias)
+			.Validate(Tables)
+			.Validate(Views)
+			;
 
-		if (string.IsNullOrWhiteSpace(Name))
-			parentErrorBuffer.Add(ValidationMessageFactory.Error($"{propertyPrefix.ConcatIfNotNullOrEmpty(".", nameof(Name))} == null"));
-
-		if (string.IsNullOrWhiteSpace(Alias))
-			parentErrorBuffer.Add(ValidationMessageFactory.Error($"{propertyPrefix.ConcatIfNotNullOrEmpty(".", nameof(Alias))} == null"));
-
-		if (0 < Tables?.Count)
-			for (int i = 0; i < Tables.Count; i++)
-				Tables[i].Validate(propertyPrefix.ConcatIfNotNullOrEmpty(".", $"{nameof(Tables)}[{i}]"), parentErrorBuffer, validationContext);
-
-		if (0 < Views?.Count)
-			for (int i = 0; i < Views.Count; i++)
-				Views[i].Validate(propertyPrefix.ConcatIfNotNullOrEmpty(".", $"{nameof(Views)}[{i}]"), parentErrorBuffer, validationContext);
-
-		return parentErrorBuffer;
+		return validationBuilder.Build();
 	}
 
 	public Schema Clone()

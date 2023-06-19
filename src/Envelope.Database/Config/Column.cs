@@ -31,6 +31,21 @@ public class Column : IValidable
 		return parentErrorBuffer;
 	}
 
+	public List<IValidationMessage>? Validate(
+		string? propertyPrefix = null,
+		ValidationBuilder? validationBuilder = null,
+		Dictionary<string, object>? globalValidationContext = null,
+		Dictionary<string, object>? customValidationContext = null)
+	{
+		validationBuilder ??= new ValidationBuilder();
+		validationBuilder.SetValidationMessages(propertyPrefix, globalValidationContext)
+			.IfNullOrWhiteSpace(Name)
+			.IfNullOrWhiteSpace(DatabaseType)
+			;
+
+		return validationBuilder.Build();
+	}
+
 	public Column Clone()
 		=> new()
 		{

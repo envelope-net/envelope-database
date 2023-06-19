@@ -1,5 +1,4 @@
-﻿using Envelope.Text;
-using Envelope.Validation;
+﻿using Envelope.Validation;
 
 namespace Envelope.Database.Config;
 
@@ -8,29 +7,24 @@ public class UniqueConstraint : IValidable
 	public string Name { get; set; }
 	public List<string> Columns { get; set; }
 
-	public List<IValidationMessage>? Validate(string? propertyPrefix = null, List<IValidationMessage>? parentErrorBuffer = null, Dictionary<string, object>? validationContext = null)
+	public List<IValidationMessage>? Validate(
+		string? propertyPrefix = null,
+		ValidationBuilder? validationBuilder = null,
+		Dictionary<string, object>? globalValidationContext = null,
+		Dictionary<string, object>? customValidationContext = null)
 	{
-		parentErrorBuffer ??= new List<IValidationMessage>();
+		validationBuilder ??= new ValidationBuilder();
+		validationBuilder.SetValidationMessages(propertyPrefix, globalValidationContext)
+			.IfNullOrWhiteSpace(Name)
+			.IfNullOrEmpty(
+				Columns,
+				onSuccess: x =>
+				{
+					for (int i = 0; i < Columns.Count; i++)
+						x.IfNullOrWhiteSpace(Columns[i], $"{nameof(Columns)}[{i}]");
+				});
 
-		if (string.IsNullOrWhiteSpace(Name))
-			parentErrorBuffer.Add(ValidationMessageFactory.Error($"{propertyPrefix.ConcatIfNotNullOrEmpty(".", nameof(Name))} == null"));
-
-		if (Columns == null)
-		{
-			parentErrorBuffer.Add(ValidationMessageFactory.Error($"{propertyPrefix.ConcatIfNotNullOrEmpty(".", nameof(Columns))} == null"));
-		}
-		else if (Columns.Count == 0)
-		{
-			parentErrorBuffer.Add(ValidationMessageFactory.Error($"{propertyPrefix.ConcatIfNotNullOrEmpty(".", nameof(Columns))}.{nameof(Columns.Count)} == 0"));
-		}
-		else
-		{
-			for (int i = 0; i < Columns.Count; i++)
-				if (string.IsNullOrWhiteSpace(Columns[i]))
-					parentErrorBuffer.Add(ValidationMessageFactory.Error($"{propertyPrefix.ConcatIfNotNullOrEmpty(".", $"{nameof(Columns)}[{i}]")} == null"));
-		}
-
-		return parentErrorBuffer;
+		return validationBuilder.Build();
 	}
 
 	public UniqueConstraint Clone()

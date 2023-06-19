@@ -1,5 +1,4 @@
-﻿using Envelope.Text;
-using Envelope.Validation;
+﻿using Envelope.Validation;
 
 namespace Envelope.Database.Config;
 
@@ -9,15 +8,19 @@ public class View : IValidable
 	public int? Id { get; set; }
 	public string Definition { get; set; }
 
-	public List<IValidationMessage>? Validate(string? propertyPrefix = null, List<IValidationMessage>? parentErrorBuffer = null, Dictionary<string, object>? validationContext = null)
+	public List<IValidationMessage>? Validate(
+		string? propertyPrefix = null,
+		ValidationBuilder? validationBuilder = null,
+		Dictionary<string, object>? globalValidationContext = null,
+		Dictionary<string, object>? customValidationContext = null)
 	{
-		if (string.IsNullOrWhiteSpace(Name))
-			parentErrorBuffer.Add(ValidationMessageFactory.Error($"{propertyPrefix.ConcatIfNotNullOrEmpty(".", nameof(Name))} == null"));
+		validationBuilder ??= new ValidationBuilder();
+		validationBuilder.SetValidationMessages(propertyPrefix, globalValidationContext)
+			.IfNullOrWhiteSpace(Name)
+			.IfNullOrWhiteSpace(Definition)
+			;
 
-		if (string.IsNullOrWhiteSpace(Definition))
-			parentErrorBuffer.Add(ValidationMessageFactory.Error($"{propertyPrefix.ConcatIfNotNullOrEmpty(".", nameof(Definition))} == null"));
-
-		return parentErrorBuffer;
+		return validationBuilder.Build();
 	}
 
 	public View Clone()

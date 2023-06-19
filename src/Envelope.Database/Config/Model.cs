@@ -1,4 +1,3 @@
-using Envelope.Text;
 using Envelope.Validation;
 
 namespace Envelope.Database.Config;
@@ -13,28 +12,19 @@ public class Model : IValidable
 	public DateTime? CreationDate { get; set; }
 	public List<Schema> Schemas { get; set; }
 
-	public List<IValidationMessage>? Validate(string? propertyPrefix = null, List<IValidationMessage>? parentErrorBuffer = null, Dictionary<string, object>? validationContext = null)
+	public List<IValidationMessage>? Validate(
+		string? propertyPrefix = null,
+		ValidationBuilder? validationBuilder = null,
+		Dictionary<string, object>? globalValidationContext = null,
+		Dictionary<string, object>? customValidationContext = null)
 	{
-		parentErrorBuffer ??= new List<IValidationMessage>();
+		validationBuilder ??= new ValidationBuilder();
+		validationBuilder.SetValidationMessages(propertyPrefix, globalValidationContext)
+			.IfNullOrWhiteSpace(Name)
+			.Validate(Schemas)
+			;
 
-		if (string.IsNullOrWhiteSpace(Name))
-			parentErrorBuffer.Add(ValidationMessageFactory.Error($"{propertyPrefix.ConcatIfNotNullOrEmpty(".", nameof(Name))} == null"));
-
-		if (Schemas == null)
-		{
-			parentErrorBuffer.Add(ValidationMessageFactory.Error($"{propertyPrefix.ConcatIfNotNullOrEmpty(".", nameof(Schemas))} == null"));
-		}
-		else if (Schemas.Count == 0)
-		{
-			parentErrorBuffer.Add(ValidationMessageFactory.Error($"{propertyPrefix.ConcatIfNotNullOrEmpty(".", nameof(Schemas))}.{nameof(Schemas.Count)} == 0"));
-		}
-		else
-		{
-			for (int i = 0; i < Schemas.Count; i++)
-				Schemas[i].Validate(propertyPrefix.ConcatIfNotNullOrEmpty(".", $"{nameof(Schemas)}[{i}]"), parentErrorBuffer, validationContext);
-		}
-
-		return parentErrorBuffer;
+		return validationBuilder.Build();
 	}
 
 	public Model Clone()
